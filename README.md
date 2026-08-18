@@ -10,6 +10,10 @@
 [![working days](https://img.shields.io/badge/working%20days-per%20person-0d9488.svg)](#what-it-does)
 [![export](https://img.shields.io/badge/export-.ics%20invitation-0d9488.svg)](#what-it-does)
 
+[![meridian screenshot](docs/screenshot.png)](https://martin-k-m.github.io/meridian/)
+
+<sub>One day across three timezones, shaded by each person&rsquo;s working hours, with the clock-change warning on the suggested slots. <a href="https://martin-k-m.github.io/meridian/">Try it</a>.</sub>
+
 Find a meeting time that is civil for everybody, shown in each person's own
 local clock, with daylight saving handled by the timezone database rather than
 by arithmetic in your head.
