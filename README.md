@@ -75,6 +75,21 @@ src/
 
 `lib/` is pure and DOM-free; the components only present what it computes.
 
+## Deploy
+
+Static, client-only and free of environment variables, so it deploys as-is.
+
+Import the repository once and every push to `main` ships automatically:
+
+```bash
+npx vercel login
+npx vercel link --repo martin-k-m/meridian
+npx vercel --prod
+```
+
+Or import it through the dashboard:
+<https://vercel.com/import/git?s=https://github.com/martin-k-m/meridian>
+
 ## Development
 
 ```bash
