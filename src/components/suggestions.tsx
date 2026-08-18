@@ -1,6 +1,7 @@
 "use client";
 
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
+import { entranceProps } from "@/components/ui/motion";
 import type { DstShift, Participant, Slot } from "@/lib/time/slots";
 import { EmptyState } from "@/components/ui/controls";
 import { formatClock, weekdayName, zoneCity, zonedParts } from "@/lib/time/zones";
@@ -32,6 +33,8 @@ export function Suggestions({
   showDate,
   shifts,
 }: SuggestionsProps) {
+  const reduce = useReducedMotion();
+
   if (slots.length === 0) {
     return (
       <EmptyState
@@ -51,9 +54,7 @@ export function Suggestions({
           <motion.li
             key={slot.startUtc}
             layout
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.28, delay: index * 0.05 }}
+            {...entranceProps(reduce, { index, duration: 0.28, step: 0.05 })}
             className={`mb-1.5 rounded-lg border p-3 transition-colors ${
               selected ? "border-accent bg-raised" : "border-line hover:border-line-strong"
             }`}

@@ -1,6 +1,7 @@
 "use client";
 
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
+import { entranceProps } from "@/components/ui/motion";
 import type { Participant, Quality, Slot } from "@/lib/time/slots";
 import { formatClock, zoneCity } from "@/lib/time/zones";
 
@@ -102,6 +103,8 @@ function PersonRow({
   selectedStart: number | null;
   onSelect: (slot: Slot) => void;
 }) {
+  const reduce = useReducedMotion();
+
   return (
     <>
       <div className="sticky left-0 z-10 flex items-center gap-1.5 bg-surface pr-2 text-[12px]">
@@ -119,9 +122,7 @@ function PersonRow({
             key={slot.startUtc}
             type="button"
             onClick={() => onSelect(slot)}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.25, delay: Math.min(index, 24) * 0.008 }}
+            {...entranceProps(reduce, { index, distance: 0, duration: 0.25, step: 0.008 })}
             title={`${participant.name}: ${formatClock(entry.hour, entry.minute)}${
               entry.dayOffset === 0 ? "" : entry.dayOffset > 0 ? " next day" : " previous day"
             }`}
