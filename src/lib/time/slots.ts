@@ -1,7 +1,6 @@
 import {
   formatClock,
   instantFromWallClock,
-  isWeekend,
   parseIsoDate,
   weekdayName,
   zonedParts,
@@ -14,6 +13,12 @@ export interface Participant {
   /** Working window in the participant's own local time, in hours. */
   dayStart: number;
   dayEnd: number;
+  /**
+   * Days this person works, 0 = Sunday. Optional so rosters saved before this
+   * existed still load; the weekend is not Saturday and Sunday everywhere, and
+   * assuming so quietly excludes colleagues in much of the world.
+   */
+  workdays?: number[];
 }
 
 export type Quality = "core" | "fringe" | "outside";
@@ -52,8 +57,14 @@ const QUALITY_WEIGHT: Record<Quality, number> = { core: 1, fringe: 0.45, outside
 /** How far outside the working window still counts as "askable". */
 const FRINGE_HOURS = 1.5;
 
+export const DEFAULT_WORKDAYS = [1, 2, 3, 4, 5];
+
+export function workdaysOf(participant: Participant): number[] {
+  return participant.workdays ?? DEFAULT_WORKDAYS;
+}
+
 function classify(participant: Participant, hours: number, weekday: number): Quality {
-  if (isWeekend(weekday)) return "outside";
+  if (!workdaysOf(participant).includes(weekday)) return "outside";
   const { dayStart, dayEnd } = participant;
   if (hours >= dayStart && hours <= dayEnd) return "core";
   if (hours >= dayStart - FRINGE_HOURS && hours <= dayEnd + FRINGE_HOURS) return "fringe";
@@ -197,4 +208,50 @@ export function buildRangeSlots(options: SlotOptions, days: number): Slot[] {
     slots.push(...buildSlots({ ...options, date: shiftDate(options.date, offset) }));
   }
   return slots;
+}
+
+export interface DstShift {
+  participantId: string;
+  /** The first instant, in weeks from the slot, at which the local time moves. */
+  weeksAhead: number;
+  from: string;
+  to: string;
+}
+
+/**
+ * A recurring meeting is agreed once and then drifts: when a participant's zone
+ * changes offset, the slot moves in their local clock even though the UTC
+ * instant is unchanged. Worth knowing before the invitation goes out.
+ */
+export function detectDstShifts(
+  slot: Slot,
+  participants: Participant[],
+  weeksAhead = 12,
+): DstShift[] {
+  const shifts: DstShift[] = [];
+
+  for (const participant of participants) {
+    const base = zonedParts(participant.timeZone, new Date(slot.startUtc));
+    const baseLabel = formatClock(base.hour, base.minute);
+
+    for (let week = 1; week <= weeksAhead; week += 1) {
+      const later = zonedParts(
+        participant.timeZone,
+        new Date(slot.startUtc + week * 7 * 86_400_000),
+      );
+      const laterLabel = formatClock(later.hour, later.minute);
+
+      if (laterLabel !== baseLabel) {
+        shifts.push({
+          participantId: participant.id,
+          weeksAhead: week,
+          from: baseLabel,
+          to: laterLabel,
+        });
+        break;
+      }
+    }
+  }
+
+  return shifts;
 }

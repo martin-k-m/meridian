@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import { ZonePicker } from "@/components/zone-picker";
 import { Button } from "@/components/ui/controls";
-import type { Participant } from "@/lib/time/slots";
+import { workdaysOf, type Participant } from "@/lib/time/slots";
 
 interface RosterProps {
   participants: Participant[];
@@ -43,6 +43,12 @@ export function Roster({ participants, onChange, onRemove, onAdd }: RosterProps)
                   />
                 </div>
 
+                <WorkdayPicker
+                  days={workdaysOf(participant)}
+                  name={participant.name}
+                  onChange={(workdays) => onChange(participant.id, { workdays })}
+                />
+
                 <div className="flex shrink-0 items-center gap-1 text-[11px] text-subtle">
                   <HourInput
                     value={participant.dayStart}
@@ -78,6 +84,45 @@ export function Roster({ participants, onChange, onRemove, onAdd }: RosterProps)
           Add person
         </Button>
       </div>
+    </div>
+  );
+}
+
+const DAY_INITIALS = ["S", "M", "T", "W", "T", "F", "S"];
+
+/** The working week is not Monday to Friday everywhere, so it is per person. */
+function WorkdayPicker({
+  days,
+  name,
+  onChange,
+}: {
+  days: number[];
+  name: string;
+  onChange: (days: number[]) => void;
+}) {
+  return (
+    <div className="flex shrink-0 gap-px" role="group" aria-label={`${name} working days`}>
+      {DAY_INITIALS.map((initial, index) => {
+        const active = days.includes(index);
+        return (
+          <button
+            key={index}
+            type="button"
+            aria-pressed={active}
+            title={["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][index]}
+            onClick={() =>
+              onChange(
+                active ? days.filter((day) => day !== index) : [...days, index].sort((a, b) => a - b),
+              )
+            }
+            className={`h-5 w-4 rounded-sm text-[9px] transition-colors ${
+              active ? "bg-accent-soft text-fg" : "bg-raised text-subtle hover:text-muted"
+            }`}
+          >
+            {initial}
+          </button>
+        );
+      })}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
-import type { Participant, Slot } from "@/lib/time/slots";
+import type { DstShift, Participant, Slot } from "@/lib/time/slots";
 import { EmptyState } from "@/components/ui/controls";
 import { formatClock, weekdayName, zoneCity, zonedParts } from "@/lib/time/zones";
 
@@ -16,6 +16,8 @@ interface SuggestionsProps {
   copiedStart: number | null;
   /** Week-long searches need the day spelled out, not just the time. */
   showDate: boolean;
+  /** Clock changes that would move this slot for someone, keyed by slot start. */
+  shifts: Map<number, DstShift[]>;
 }
 
 export function Suggestions({
@@ -28,6 +30,7 @@ export function Suggestions({
   onDownload,
   copiedStart,
   showDate,
+  shifts,
 }: SuggestionsProps) {
   if (slots.length === 0) {
     return (
@@ -96,6 +99,8 @@ export function Suggestions({
               </dl>
             </button>
 
+            <DstNotice shifts={shifts.get(slot.startUtc) ?? []} participants={participants} />
+
             <div className="mt-2 flex gap-1.5">
               <button
                 type="button"
@@ -117,6 +122,31 @@ export function Suggestions({
         );
       })}
     </ul>
+  );
+}
+
+function DstNotice({
+  shifts,
+  participants,
+}: {
+  shifts: DstShift[];
+  participants: Participant[];
+}) {
+  if (shifts.length === 0) return null;
+  const soonest = [...shifts].sort((a, b) => a.weeksAhead - b.weeksAhead);
+
+  return (
+    <p className="mt-2 rounded border border-warn/40 bg-warn/[0.07] px-2 py-1.5 text-[11px] text-muted">
+      {soonest.map((shift) => {
+        const who = participants.find((participant) => participant.id === shift.participantId);
+        return (
+          <span key={shift.participantId} className="block">
+            In {shift.weeksAhead} {shift.weeksAhead === 1 ? "week" : "weeks"} this becomes{" "}
+            {shift.to} for {who?.name ?? "someone"} (from {shift.from}) — their clocks change.
+          </span>
+        );
+      })}
+    </p>
   );
 }
 

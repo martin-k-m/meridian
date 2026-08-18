@@ -22,7 +22,12 @@ leaves the machine.
 - **Ranked suggestions**, ordered by *fairness* before average quality: a slot
   that suits four people and ruins the fifth is not a good meeting time, and the
   ranking says so.
-- **Per-person working hours**, because 09:00–17:00 is not universal.
+- **Per-person working hours and working days.** Neither 09:00–17:00 nor a
+  Saturday–Sunday weekend is universal: a colleague working Sunday to Thursday is
+  a checkbox, not a workaround.
+- **Daylight saving warnings for recurring meetings.** A slot agreed today drifts
+  when someone's clocks change — the UTC instant holds, their local time does
+  not. Suggestions say so in advance: "in 1 week this becomes 15:00 for Ana".
 - **Day rollover made visible** — a slot that lands at 01:30 tomorrow for a
   colleague in Asia is labelled `+1d` rather than quietly shown as 01:30.
 - **Search the whole week.** When today has nothing workable — a Saturday, or a

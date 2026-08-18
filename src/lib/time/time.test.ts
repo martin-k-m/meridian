@@ -14,6 +14,8 @@ import {
   evaluateSlot,
   rankSlots,
   shiftDate,
+  workdaysOf,
+  detectDstShifts,
   type Participant,
 } from "./slots";
 import { toIcs } from "./ics";
@@ -286,5 +288,76 @@ describe("share state", () => {
     expect(decodeState("")).toBeNull();
     expect(decodeState("#not-base64!!")).toBeNull();
     expect(decodeState(`#${encodeState({ ...state, participants: [] })}`)).toBeNull();
+  });
+});
+
+describe("working days", () => {
+  const base = { date: "2026-08-21", organiserZone: "UTC", durationMinutes: 30 };
+
+  it("defaults to Monday through Friday", () => {
+    const friday = evaluateSlot(Date.parse("2026-08-21T13:00:00Z"), { ...base, participants: team });
+    expect(friday.fairness).toBe(1);
+    const saturday = evaluateSlot(Date.parse("2026-08-22T13:00:00Z"), { ...base, participants: team });
+    expect(saturday.fairness).toBe(0);
+  });
+
+  it("honours a Sunday-to-Thursday week", () => {
+    // Much of the Gulf works Sunday to Thursday; Friday is the weekend.
+    const dubai: Participant[] = [
+      { id: "d", name: "Dana", timeZone: "Asia/Dubai", dayStart: 9, dayEnd: 17, workdays: [0, 1, 2, 3, 4] },
+    ];
+    const sunday = evaluateSlot(Date.parse("2026-08-23T08:00:00Z"), { ...base, participants: dubai });
+    const friday = evaluateSlot(Date.parse("2026-08-21T08:00:00Z"), { ...base, participants: dubai });
+    expect(sunday.entries[0]?.quality).toBe("core");
+    expect(friday.entries[0]?.quality).toBe("outside");
+  });
+
+  it("treats a roster saved without workdays as Monday to Friday", () => {
+    const legacy: Participant[] = [{ id: "l", name: "Lee", timeZone: "UTC", dayStart: 9, dayEnd: 17 }];
+    expect(workdaysOf(legacy[0]!)).toEqual([1, 2, 3, 4, 5]);
+    expect(
+      evaluateSlot(Date.parse("2026-08-22T13:00:00Z"), { ...base, participants: legacy }).fairness,
+    ).toBe(0);
+  });
+});
+
+describe("detectDstShifts", () => {
+  const options = { date: "2026-10-20", organiserZone: "UTC", durationMinutes: 30 };
+
+  it("warns that a slot moves for a participant when their clocks change", () => {
+    // Europe goes back on 25 Oct 2026, the US on 1 Nov.
+    const roster: Participant[] = [
+      { id: "a", name: "Ana", timeZone: "Europe/Madrid", dayStart: 9, dayEnd: 18 },
+      { id: "b", name: "Ben", timeZone: "America/New_York", dayStart: 9, dayEnd: 17 },
+    ];
+    const slot = evaluateSlot(Date.parse("2026-10-20T14:00:00Z"), { ...options, participants: roster });
+    const shifts = detectDstShifts(slot, roster, 4);
+
+    const ana = shifts.find((shift) => shift.participantId === "a");
+    expect(ana).toBeDefined();
+    expect(ana?.from).toBe("16:00");
+    expect(ana?.to).toBe("15:00");
+    expect(ana?.weeksAhead).toBe(1);
+
+    const ben = shifts.find((shift) => shift.participantId === "b");
+    expect(ben?.from).toBe("10:00");
+    expect(ben?.to).toBe("09:00");
+    expect(ben?.weeksAhead).toBe(2);
+  });
+
+  it("says nothing for a zone that does not observe daylight saving", () => {
+    const roster: Participant[] = [
+      { id: "c", name: "Chen", timeZone: "Asia/Kolkata", dayStart: 10, dayEnd: 19 },
+    ];
+    const slot = evaluateSlot(Date.parse("2026-10-20T09:00:00Z"), { ...options, participants: roster });
+    expect(detectDstShifts(slot, roster, 12)).toEqual([]);
+  });
+
+  it("looks no further ahead than asked", () => {
+    const roster: Participant[] = [
+      { id: "a", name: "Ana", timeZone: "Europe/Madrid", dayStart: 9, dayEnd: 18 },
+    ];
+    const slot = evaluateSlot(Date.parse("2026-06-01T10:00:00Z"), { ...options, participants: roster });
+    expect(detectDstShifts(slot, roster, 4)).toEqual([]);
   });
 });

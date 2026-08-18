@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/controls";
 import {
   buildRangeSlots,
   buildSlots,
+  detectDstShifts,
   describeSlot,
   rankSlots,
   type Participant,
@@ -104,6 +105,14 @@ export function Meridian() {
   );
 
   const ranked = useMemo(() => rankSlots(searchSpace, 4), [searchSpace]);
+
+  // Only the shortlist is checked: scanning every candidate for clock changes
+  // would be a lot of formatting for slots nobody is going to pick.
+  const shifts = useMemo(
+    () =>
+      new Map(ranked.map((slot) => [slot.startUtc, detectDstShifts(slot, participants, 12)])),
+    [ranked, participants],
+  );
 
   const updateParticipant = useCallback((id: string, patch: Partial<Participant>) => {
     setParticipants((current) =>
@@ -303,6 +312,7 @@ export function Meridian() {
             onDownload={downloadIcs}
             copiedStart={copiedStart}
             showDate={scope === "week"}
+            shifts={shifts}
           />
         </Panel>
       </div>
