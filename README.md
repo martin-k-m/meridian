@@ -2,6 +2,9 @@
 
 *The lines of longitude that are, in the end, what timezones are.*
 
+[![CI](https://github.com/martin-k-m/meridian/actions/workflows/ci.yml/badge.svg)](https://github.com/martin-k-m/meridian/actions/workflows/ci.yml)
+[![licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
+
 Find a meeting time that is civil for everybody, shown in each person's own
 local clock, with daylight saving handled by the timezone database rather than
 by arithmetic in your head.
