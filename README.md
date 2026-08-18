@@ -4,6 +4,7 @@
 
 [![CI](https://github.com/martin-k-m/meridian/actions/workflows/ci.yml/badge.svg)](https://github.com/martin-k-m/meridian/actions/workflows/ci.yml)
 [![licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
+[![live](https://img.shields.io/badge/live-martin--k--m.github.io-brightgreen.svg)](https://martin-k-m.github.io/meridian/)
 
 Find a meeting time that is civil for everybody, shown in each person's own
 local clock, with daylight saving handled by the timezone database rather than
@@ -77,9 +78,14 @@ src/
 
 ## Deploy
 
-Static, client-only and free of environment variables, so it deploys as-is.
+**Live: <https://martin-k-m.github.io/meridian/>**
 
-Import the repository once and every push to `main` ships automatically:
+Static, client-only and free of environment variables. Every push to `main`
+rebuilds and republishes it through the Pages workflow; `next.config.ts` switches
+to `output: "export"` with a `/meridian` base path only when `GITHUB_PAGES` is set,
+so local development is unaffected.
+
+To host it on Vercel instead:
 
 ```bash
 npx vercel login
