@@ -5,7 +5,7 @@
 [![CI](https://github.com/martin-k-m/meridian/actions/workflows/ci.yml/badge.svg)](https://github.com/martin-k-m/meridian/actions/workflows/ci.yml)
 [![licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
 [![live](https://img.shields.io/badge/live-martin--k--m.github.io-brightgreen.svg)](https://martin-k-m.github.io/meridian/)
-[![tests](https://img.shields.io/badge/tests-32%20passing-brightgreen.svg)](src/lib)
+[![tests](https://img.shields.io/badge/tests-0%20passing-brightgreen.svg)](src/lib)
 [![search](https://img.shields.io/badge/search-day%20or%20week-0d9488.svg)](#what-it-does)
 [![working days](https://img.shields.io/badge/working%20days-per%20person-0d9488.svg)](#what-it-does)
 [![export](https://img.shields.io/badge/export-.ics%20invitation-0d9488.svg)](#what-it-does)
