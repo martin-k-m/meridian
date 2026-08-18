@@ -290,7 +290,6 @@ export function Meridian() {
         <Panel
           order={2}
           title="Best times"
-          hint="fairest first"
           actions={
             <Choice
               label="Search range"
