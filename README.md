@@ -115,6 +115,14 @@ Or import it through the dashboard:
 
 ## Accessibility
 
+The time grid is a real grid, not a wall of buttons: one cell sits in the tab
+order and the arrow keys move between cells, with `Home`/`End` for the ends of a
+row and `PageUp`/`PageDown` for a column. Twenty-four hours times three people is
+seventy-two buttons, and putting all of them in the tab sequence is reachable in
+theory and unusable in practice.
+
+## Automated checks
+
 Every build runs [axe-core](https://github.com/dequelabs/axe-core) against the
 real static export, in **both themes at desktop and phone width**, and fails on
 any serious or critical violation. It also checks that the page does not scroll

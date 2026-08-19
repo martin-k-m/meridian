@@ -1,7 +1,9 @@
 "use client";
 
+import { useCallback, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { entranceProps } from "@/components/ui/motion";
+import { isGridKey, moveFocus } from "@/lib/grid-navigation";
 import type { Participant, Quality, Slot } from "@/lib/time/slots";
 import { formatClock, zoneCity } from "@/lib/time/zones";
 
@@ -31,6 +33,28 @@ export function HeatGrid({
   selectedStart,
   onSelect,
 }: HeatGridProps) {
+  // Roving tabindex: one cell is in the tab order and the arrow keys move
+  // between them, rather than putting every cell in the tab sequence.
+  const [focused, setFocused] = useState(0);
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  const onKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (!isGridKey(event.key)) return;
+      event.preventDefault();
+
+      const next = moveFocus(focused, event.key, {
+        columns: slots.length,
+        rows: participants.length,
+      });
+      setFocused(next);
+      gridRef.current
+        ?.querySelectorAll<HTMLButtonElement>("[data-cell]")
+        ?.[next]?.focus();
+    },
+    [focused, slots.length, participants.length],
+  );
+
   if (slots.length === 0 || participants.length === 0) {
     return (
       <div className="grid h-full place-items-center px-6 text-center text-sm text-subtle">
@@ -43,35 +67,50 @@ export function HeatGrid({
     <div className="h-full overflow-auto">
       <div className="min-w-[820px] p-3">
         <div
+          ref={gridRef}
+          role="grid"
+          aria-label="Each participant's local time through the day"
+          aria-rowcount={participants.length}
+          aria-colcount={slots.length}
+          onKeyDown={onKeyDown}
           className="grid gap-px"
           style={{ gridTemplateColumns: `120px repeat(${slots.length}, minmax(0, 1fr))` }}
         >
-          <div className="sticky left-0 z-10 bg-surface pb-1 text-[10px] uppercase tracking-wider text-subtle">
-            {zoneCity(organiserZone)}
+          <div role="row" className="contents">
+            <div
+              role="columnheader"
+              className="sticky left-0 z-10 bg-surface pb-1 text-[10px] uppercase tracking-wider text-subtle"
+            >
+              {zoneCity(organiserZone)}
+            </div>
+            {slots.map((slot) => {
+              const hour = new Date(slot.startUtc);
+              return (
+                <button
+                  key={slot.startUtc}
+                  type="button"
+                  role="columnheader"
+                  onClick={() => onSelect(slot)}
+                  className="relative pb-1 text-center text-[10px] text-subtle transition-colors hover:text-fg"
+                >
+                  {hour.getUTCMinutes() === 0 || slots.length <= 24 ? (
+                    <OrganiserLabel slot={slot} organiserZone={organiserZone} />
+                  ) : null}
+                </button>
+              );
+            })}
           </div>
-          {slots.map((slot) => {
-            const hour = new Date(slot.startUtc);
-            return (
-              <button
-                key={slot.startUtc}
-                type="button"
-                onClick={() => onSelect(slot)}
-                className="relative pb-1 text-center text-[10px] text-subtle transition-colors hover:text-fg"
-              >
-                {hour.getUTCMinutes() === 0 || slots.length <= 24 ? (
-                  <OrganiserLabel slot={slot} organiserZone={organiserZone} />
-                ) : null}
-              </button>
-            );
-          })}
 
-          {participants.map((participant) => (
+          {participants.map((participant, row) => (
             <PersonRow
               key={participant.id}
               participant={participant}
               slots={slots}
               selectedStart={selectedStart}
               onSelect={onSelect}
+              row={row}
+              focused={focused}
+              onFocusCell={setFocused}
             />
           ))}
         </div>
@@ -97,17 +136,26 @@ function PersonRow({
   slots,
   selectedStart,
   onSelect,
+  row,
+  focused,
+  onFocusCell,
 }: {
   participant: Participant;
   slots: Slot[];
   selectedStart: number | null;
   onSelect: (slot: Slot) => void;
+  row: number;
+  focused: number;
+  onFocusCell: (index: number) => void;
 }) {
   const reduce = useReducedMotion();
 
   return (
-    <>
-      <div className="sticky left-0 z-10 flex items-center gap-1.5 bg-surface pr-2 text-[12px]">
+    <div role="row" className="contents">
+      <div
+        role="rowheader"
+        className="sticky left-0 z-10 flex items-center gap-1.5 bg-surface pr-2 text-[12px]"
+      >
         <span className="truncate font-medium text-fg">{participant.name}</span>
         <span className="truncate text-[11px] text-subtle">{zoneCity(participant.timeZone)}</span>
       </div>
@@ -116,11 +164,18 @@ function PersonRow({
         const entry = slot.entries.find((item) => item.participantId === participant.id);
         if (!entry) return <div key={slot.startUtc} />;
         const selected = slot.startUtc === selectedStart;
+        const cellIndex = row * slots.length + index;
 
         return (
           <motion.button
             key={slot.startUtc}
             type="button"
+            data-cell
+            role="gridcell"
+            aria-selected={selected}
+            // Only the roving cell stays in the tab order.
+            tabIndex={cellIndex === focused ? 0 : -1}
+            onFocus={() => onFocusCell(cellIndex)}
             onClick={() => onSelect(slot)}
             {...entranceProps(reduce, { index, distance: 0, duration: 0.25, step: 0.008 })}
             title={`${participant.name}: ${formatClock(entry.hour, entry.minute)}${
@@ -141,7 +196,7 @@ function PersonRow({
           </motion.button>
         );
       })}
-    </>
+    </div>
   );
 }
 

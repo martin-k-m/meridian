@@ -94,6 +94,30 @@ try {
         }
       }
 
+      // The time grid uses a roving tabindex: exactly one cell is reachable by
+      // Tab, and the arrow keys move between them. Axe cannot check that the
+      // pattern actually works, so it is exercised here.
+      if (viewport.name === "desktop") {
+        const tabbable = await page.locator('[data-cell][tabindex="0"]').count();
+        if (tabbable !== 1) {
+          const line = `${viewport.name}/${colorScheme}: ${tabbable} cells are tabbable, expected exactly 1`;
+          failures.push(line);
+          console.error(`FAIL ${line}`);
+        }
+
+        await page.locator('[data-cell]').first().focus();
+        const before = await page.evaluate(() => document.activeElement?.textContent ?? "");
+        await page.keyboard.press("ArrowRight");
+        const after = await page.evaluate(() => document.activeElement?.textContent ?? "");
+        if (before === after) {
+          const line = `${viewport.name}/${colorScheme}: ArrowRight did not move focus in the grid`;
+          failures.push(line);
+          console.error(`FAIL ${line}`);
+        } else {
+          console.log(`  grid keyboard: focus moved ${before.trim()} -> ${after.trim()}`);
+        }
+      }
+
       // A page that scrolls sideways on a phone is a layout bug, not a taste
       // question, so it is checked rather than eyeballed.
       const overflow = await page.evaluate(
