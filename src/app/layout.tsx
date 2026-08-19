@@ -7,9 +7,26 @@ const sans = Inter({ subsets: ["latin"], variable: "--font-sans-face", display: 
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono-face", display: "swap" });
 
 export const metadata: Metadata = {
+  // Absolute URLs are required for social previews, and a static export has no
+  // request to infer the origin from.
+  metadataBase: new URL("https://martin-k-m.github.io/meridian/"),
   title: "meridian — meeting times across timezones",
-  description:
-    "Pick a meeting time that works across timezones, with everyone's working hours and daylight saving handled for you.",
+  description: "Pick a meeting time that works across timezones, with everyone's working hours and daylight saving handled for you.",
+  applicationName: "meridian",
+  openGraph: {
+    title: "meridian",
+    description: "Meeting times across timezones, in everyone's own clock.",
+    url: "https://martin-k-m.github.io/meridian/",
+    siteName: "meridian",
+    images: [{ url: "https://raw.githubusercontent.com/martin-k-m/meridian/main/docs/screenshot.png", width: 2760, height: 1400, alt: "meridian in use" }],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "meridian",
+    description: "Meeting times across timezones, in everyone's own clock.",
+    images: ["https://raw.githubusercontent.com/martin-k-m/meridian/main/docs/screenshot.png"],
+  },
 };
 
 export const viewport: Viewport = {

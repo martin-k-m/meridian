@@ -46,6 +46,10 @@ leaves the machine.
 - **Download the invitation** as an `.ics` file, with everyone's local time in
   the description. Times are written as UTC instants, which every calendar
   client converts back for its own user.
+- **Rotation for recurring meetings.** When timezones genuinely do not overlap,
+  every possible time asks *someone* to give up their evening — and picking the
+  single "best" slot means it is always the same person. Rotation plans several
+  occurrences so the burden moves around, and shows who stretches how often.
 - **Copy summary** produces the paste-ready block you actually send:
 
   ```

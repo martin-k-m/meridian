@@ -16,6 +16,7 @@ import {
   shiftDate,
   workdaysOf,
   detectDstShifts,
+  planRotation,
   type Participant,
 } from "./slots";
 import { toIcs } from "./ics";
@@ -359,5 +360,57 @@ describe("detectDstShifts", () => {
     ];
     const slot = evaluateSlot(Date.parse("2026-06-01T10:00:00Z"), { ...options, participants: roster });
     expect(detectDstShifts(slot, roster, 4)).toEqual([]);
+  });
+});
+
+describe("planRotation", () => {
+  const spread: Participant[] = [
+    { id: "a", name: "Ana", timeZone: "America/Los_Angeles", dayStart: 9, dayEnd: 17 },
+    { id: "b", name: "Ben", timeZone: "Europe/Berlin", dayStart: 9, dayEnd: 17 },
+    { id: "c", name: "Chen", timeZone: "Asia/Tokyo", dayStart: 9, dayEnd: 17 },
+  ];
+
+  const options = {
+    date: "2026-08-18",
+    organiserZone: "UTC",
+    durationMinutes: 30,
+    stepMinutes: 30,
+    participants: spread,
+  };
+
+  it("does not rotate when one time suits everyone", () => {
+    const rotation = planRotation(buildSlots({ ...options, participants: team }), team, 4);
+    expect(rotation.needed).toBe(false);
+    expect(new Set(rotation.entries.map((entry) => entry.slot.startUtc)).size).toBe(1);
+    expect(Object.values(rotation.burden).every((count) => count === 0)).toBe(true);
+  });
+
+  it("shares the burden when no time suits everyone", () => {
+    // Los Angeles, Berlin and Tokyo have no common working hours.
+    const slots = buildSlots(options);
+    expect(rankSlots(slots)[0]?.fairness).toBeLessThan(1);
+
+    const rotation = planRotation(slots, spread, 6);
+    expect(rotation.needed).toBe(true);
+    expect(rotation.entries).toHaveLength(6);
+
+    const counts = Object.values(rotation.burden);
+    // Nobody carries every occurrence, and the spread is even to within one.
+    expect(Math.max(...counts)).toBeLessThan(6);
+    expect(Math.max(...counts) - Math.min(...counts)).toBeLessThanOrEqual(2);
+  });
+
+  it("records who stretches for each occurrence", () => {
+    const rotation = planRotation(buildSlots(options), spread, 3);
+    for (const entry of rotation.entries) {
+      expect(entry.stretchedBy.length).toBeGreaterThan(0);
+      for (const id of entry.stretchedBy) {
+        expect(spread.map((p) => p.id)).toContain(id);
+      }
+    }
+  });
+
+  it("copes with an empty schedule", () => {
+    expect(planRotation([], spread, 4).entries).toEqual([]);
   });
 });

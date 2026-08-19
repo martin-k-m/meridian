@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Roster } from "@/components/roster";
 import { HeatGrid } from "@/components/heat-grid";
 import { Suggestions } from "@/components/suggestions";
+import { RotationView } from "@/components/rotation";
 import { ZonePicker } from "@/components/zone-picker";
 import { Panel } from "@/components/ui/panel";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -12,6 +13,7 @@ import {
   buildRangeSlots,
   buildSlots,
   detectDstShifts,
+  planRotation,
   describeSlot,
   rankSlots,
   type Participant,
@@ -45,7 +47,8 @@ export function Meridian() {
   const [stepMinutes, setStepMinutes] = useState<number>(60);
   const [selectedStart, setSelectedStart] = useState<number | null>(null);
   const [copiedStart, setCopiedStart] = useState<number | null>(null);
-  const [scope, setScope] = useState<"day" | "week">("day");
+  const [scope, setScope] = useState<"day" | "week" | "rotate">("day");
+  const [copiedRotation, setCopiedRotation] = useState(false);
   const [sharedLink, setSharedLink] = useState(false);
 
   useEffect(() => {
@@ -98,7 +101,7 @@ export function Meridian() {
 
   const searchSpace = useMemo(
     () =>
-      ready && scope === "week"
+      ready && scope !== "day"
         ? buildRangeSlots({ date, organiserZone, durationMinutes, stepMinutes, participants }, 7)
         : slots,
     [ready, scope, date, organiserZone, durationMinutes, stepMinutes, participants, slots],
@@ -108,6 +111,11 @@ export function Meridian() {
 
   // Only the shortlist is checked: scanning every candidate for clock changes
   // would be a lot of formatting for slots nobody is going to pick.
+  const rotation = useMemo(
+    () => planRotation(searchSpace, participants, 4),
+    [searchSpace, participants],
+  );
+
   const shifts = useMemo(
     () =>
       new Map(ranked.map((slot) => [slot.startUtc, detectDstShifts(slot, participants, 12)])),
@@ -294,13 +302,32 @@ export function Meridian() {
             <Choice
               label="Search range"
               value={scope}
-              options={["day", "week"] as const}
+              options={["day", "week", "rotate"] as const}
               onChange={setScope}
-              format={(value) => (value === "day" ? "this day" : "next 7 days")}
+              format={(value) =>
+                value === "day" ? "this day" : value === "week" ? "next 7 days" : "rotate"
+              }
             />
           }
           className="min-h-0"
         >
+          {scope === "rotate" ? (
+            <RotationView
+              rotation={rotation}
+              participants={participants}
+              organiserZone={organiserZone}
+              copied={copiedRotation}
+              onCopy={async (text) => {
+                try {
+                  await navigator.clipboard.writeText(text);
+                  setCopiedRotation(true);
+                  setTimeout(() => setCopiedRotation(false), 1600);
+                } catch {
+                  setCopiedRotation(false);
+                }
+              }}
+            />
+          ) : (
           <Suggestions
             slots={ranked}
             participants={participants}
@@ -313,6 +340,7 @@ export function Meridian() {
             showDate={scope === "week"}
             shifts={shifts}
           />
+          )}
         </Panel>
       </div>
     </div>

@@ -255,3 +255,81 @@ export function detectDstShifts(
 
   return shifts;
 }
+
+export interface RotationEntry {
+  slot: Slot;
+  /** Participants for whom this occurrence falls outside their core hours. */
+  stretchedBy: string[];
+}
+
+export interface Rotation {
+  entries: RotationEntry[];
+  /** How many occurrences each participant is asked to stretch for. */
+  burden: Record<string, number>;
+  /** True when no single slot suits everyone, so sharing is the fair option. */
+  needed: boolean;
+}
+
+function stretchedBy(slot: Slot): string[] {
+  return slot.entries
+    .filter((entry) => entry.quality !== "core")
+    .map((entry) => entry.participantId);
+}
+
+/**
+ * When timezones do not overlap, every possible time asks someone to give up
+ * their evening. Picking the single "best" slot means it is always the same
+ * person; rotating spreads it. Chooses each occurrence greedily so that the
+ * heaviest individual burden stays as low as possible.
+ */
+export function planRotation(
+  slots: Slot[],
+  participants: Participant[],
+  occurrences = 4,
+): Rotation {
+  const burden: Record<string, number> = Object.fromEntries(
+    participants.map((participant) => [participant.id, 0]),
+  );
+
+  const usable = slots.filter((slot) => slot.entries.every((entry) => entry.quality !== "outside"));
+  const pool = usable.length > 0 ? usable : slots;
+  const perfect = pool.filter((slot) => slot.fairness === 1);
+
+  // A slot that suits everyone needs no rotation at all.
+  if (perfect.length > 0) {
+    const best = perfect[0]!;
+    return {
+      entries: Array.from({ length: occurrences }, () => ({ slot: best, stretchedBy: [] })),
+      burden,
+      needed: false,
+    };
+  }
+
+  const entries: RotationEntry[] = [];
+
+  for (let occurrence = 0; occurrence < occurrences; occurrence += 1) {
+    let chosen: Slot | null = null;
+    let chosenCost = Number.POSITIVE_INFINITY;
+
+    for (const slot of pool) {
+      const stretched = stretchedBy(slot);
+      // The cost of a slot is the worst burden anyone would carry after it,
+      // then the total, then how good the slot is in the first place.
+      const worst = Math.max(...stretched.map((id) => (burden[id] ?? 0) + 1), 0);
+      const total = stretched.reduce((sum, id) => sum + (burden[id] ?? 0) + 1, 0);
+      const cost = worst * 1000 + total * 10 - slot.score;
+
+      if (cost < chosenCost) {
+        chosen = slot;
+        chosenCost = cost;
+      }
+    }
+
+    if (!chosen) break;
+    const stretched = stretchedBy(chosen);
+    for (const id of stretched) burden[id] = (burden[id] ?? 0) + 1;
+    entries.push({ slot: chosen, stretchedBy: stretched });
+  }
+
+  return { entries, burden, needed: true };
+}
