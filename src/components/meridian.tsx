@@ -51,6 +51,7 @@ export function Meridian() {
   const [copiedRotation, setCopiedRotation] = useState(false);
   const [sharedLink, setSharedLink] = useState(false);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- the viewer's zone, clock and stored roster exist only in the browser */
   useEffect(() => {
     const home = localZone();
     setOrganiserZone(home);
@@ -81,6 +82,7 @@ export function Meridian() {
     setParticipants(restored ?? seedRoster(home));
     setReady(true);
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (!ready) return;
