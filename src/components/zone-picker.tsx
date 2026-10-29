@@ -51,9 +51,9 @@ export function ZonePicker({ value, onChange, label = "Timezone" }: ZonePickerPr
         }}
         aria-haspopup="listbox"
         aria-expanded={open}
-        aria-label={label}
         className="flex w-full items-baseline gap-2 rounded-md px-2 py-1 text-left transition-colors hover:bg-raised"
       >
+        <span className="sr-only">{label}: </span>
         <span className="truncate text-[13px] text-fg">{zoneCity(value)}</span>
         <span className="tabular shrink-0 text-[11px] text-subtle">
           {formatOffset(offsetMinutes(value, now))}
